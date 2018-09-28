@@ -27,6 +27,7 @@
                         {% if not forloop.first %}<br>{% endif %}
                         <strong>{{ model|verbose_name }}</strong><br>
                         {% for field in fields %}
+                            {{ field.errors }}
                             {{ field }}
                             <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                         {% endfor %}
