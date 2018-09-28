@@ -1,0 +1,10 @@
+*.swp
+.idea
+env/
+*.pyc
+*/__pycache__/*
+*.egg-info
+build/
+dist/
+.tox
+.pytest_cache

@@ -1,0 +1,93 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static search_and_replace_tags %}
+
+{% block extrastyle %}{{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}">
+    <link rel="stylesheet" type="text/css" href="{% static "search_and_replace/css/search_and_replace.css" %}">
+    <script type="text/javascript" src="{% static "search_and_replace/js/mark-8.11.1.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "search_and_replace/js/search_and_replace.js" %}"></script>
+{% endblock %}
+
+{% block content %}
+    <div class="search-and-replace module">
+        {% block form %}
+            <form id="search-and-replace" method="post" data-search="{{ search }}" data-replace="{{ replace }}">
+                {% csrf_token %}
+                <div id="toolbar"><!-- DIV needed for valid HTML -->
+                    {{ form.search }}
+                    {{ form.replace }}
+                    <input type="submit" name="preview" value="{% trans "Search" %}">
+                    {% if results %}
+                        <input class="apply" type="submit" name="apply" value="{% trans "Replace all" %}">
+                    {% endif %}
+                </div>
+                <div>
+                    {% for model, fields in form.get_form_fields_by_model %}
+                        {% if not forloop.first %}<br>{% endif %}
+                        <strong>{{ model|verbose_name }}</strong><br>
+                        {% for field in fields %}
+                            {{ field }}
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+                {% block extra_form_fields %}
+                    <div class="extra-form-fields">
+                        {% for field in form.get_extra_form_fields %}
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                        {% endfor %}
+                    </div>
+                {% endblock %}
+            </form>
+        {% endblock %}
+
+        {% block results %}
+            {% if search and not preview %}
+                <div class="results">
+                    <h2>{% blocktrans %}Replacing <em>{{ search }}</em> with <em>{{ replace }}</em>{% endblocktrans %}</h2>
+                    {% for model, instances in results %}
+                        <h3>{{ model|verbose_name }}</h3>
+                        <table>
+                            {% block table_head %}
+                            <tr>
+                                <th>{% trans "Instance" %}</th>
+                                <th>{% trans "Field" %}</th>
+                                <th>{% trans "Current" %}</th>
+                                <th>{% trans "Proposed" %}</th>
+                            </tr>
+                            {% endblock %}
+                            {% for instance, changes in instances %}
+                                {% for field, old, new in changes %}
+                                    {% block table_row %}
+                                    <tr>
+                                        <td>{{ instance }}</td>
+                                        <td>{{ field }}</td>
+                                        <td class="search">{{ old }}</td>
+                                        <td class="replace">{{ new }}</td>
+                                    </tr>
+                                    {% endblock %}
+                                {% endfor %}
+                            {% endfor %}
+                        </table>
+                    {% endfor %}
+                    <p class="results-count">
+                        {% if num_results %}
+                            {% blocktrans with num_results=num_results %}Showing {{ num_results }} results{% endblocktrans %}
+                        {% else %}
+                            {% trans "No results found." %}
+                        {% endif %}
+                    </p>
+                </div>
+            {% endif %}
+        {% endblock %}
+    </div>
+
+    <style type="text/css">
+
+    </style>
+
+    <script type="text/javascript">
+
+    </script>
+{% endblock %}

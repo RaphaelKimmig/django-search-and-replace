@@ -1,0 +1,3 @@
+recursive-include src/search_and_replace/templates/ *.html
+recursive-include src/search_and_replace/static/ *.css
+recursive-include src/search_and_replace/static/ *.js
