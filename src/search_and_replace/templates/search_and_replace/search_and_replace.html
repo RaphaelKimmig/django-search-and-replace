@@ -22,6 +22,7 @@
                     {% endif %}
                 </div>
                 <div>
+                    {{ form.non_field_errors }}
                     {% for model, fields in form.get_form_fields_by_model %}
                         {% if not forloop.first %}<br>{% endif %}
                         <strong>{{ model|verbose_name }}</strong><br>
@@ -34,6 +35,7 @@
                 {% block extra_form_fields %}
                     <div class="extra-form-fields">
                         {% for field in form.get_extra_form_fields %}
+                            {{ field.errors }}
                             <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                             {{ field }}
                         {% endfor %}
