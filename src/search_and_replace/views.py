@@ -1,4 +1,7 @@
+import uuid
+
 from django.contrib import messages
+from django.core.cache import cache
 from django.db.models import Q
 from django.http import HttpResponseRedirect
 from django.utils.translation import ugettext_lazy as _
@@ -27,10 +30,22 @@ class SearchAndReplaceView(TemplateView):
         self.form = self.get_form(request)
         return super().get(request, *args, **kwargs)
 
+    def is_double_submit(self):
+        preview_id = self.request.POST.get("preview_id")
+        if not preview_id:
+            return True
+
+        cache_key = "search-replace-{}".format(preview_id)
+        if cache.get(cache_key):
+            return True
+        else:
+            cache.set(cache_key, "done")
+            return False
+
     def post(self, request, *args, **kwargs):
         self.form = self.get_form(request)
         if self.form.is_valid():
-            if "apply" in request.POST:
+            if "apply" in request.POST and not self.is_double_submit():
                 return self.form_valid(preview=False)
             else:
                 return self.form_valid(preview=True)
@@ -93,7 +108,11 @@ class SearchAndReplaceView(TemplateView):
     def response_preview(self, search, replace, results, num_results):
         return self.render_to_response(
             self.get_context_data(
-                results=results, num_results=num_results, search=search, replace=replace
+                results=results,
+                num_results=num_results,
+                search=search,
+                replace=replace,
+                preview_id=str(uuid.uuid4()),
             )
         )
 

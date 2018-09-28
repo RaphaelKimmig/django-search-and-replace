@@ -13,6 +13,7 @@
         {% block form %}
             <form id="search-and-replace" method="post" data-search="{{ search }}" data-replace="{{ replace }}">
                 {% csrf_token %}
+                {% if preview_id %}<input type="hidden" name="preview_id" value="{{ preview_id }}"/>{% endif %}
                 <div id="toolbar"><!-- DIV needed for valid HTML -->
                     {{ form.search }}
                     {{ form.replace }}
@@ -46,7 +47,7 @@
         {% endblock %}
 
         {% block results %}
-            {% if search and not preview %}
+            {% if search %}
                 <div class="results">
                     <h2>{% blocktrans %}Replacing <em>{{ search }}</em> with <em>{{ replace }}</em>{% endblocktrans %}</h2>
                     {% for model, instances in results %}

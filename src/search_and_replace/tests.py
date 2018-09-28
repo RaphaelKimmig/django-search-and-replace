@@ -101,6 +101,30 @@ class SearchAndReplaceViewTest(TestCase):
         self.assertContains(response, "search_and_replace_dog_name")
         self.assertContains(response, "search_and_replace_dog_bark")
 
+    def test_search_and_replace_form_without_preview_does_not_contain_preview_id(self):
+        request = RequestFactory().get("/")
+
+        response = SearchAndReplaceView.as_view(
+            models_and_fields=self.models_and_fields
+        )(request)
+        self.assertNotContains(response, "preview_id")
+
+    def test_search_and_replace_after_submit_contains_preview_id(self):
+        request = RequestFactory().post(
+            "/",
+            {
+                "search": "the",
+                "search_and_replace_dog_bark": "true",
+                "search_and_replace_dog_name": "true",
+                "search_and_replace_cat_bio": "true",
+                "search_and_replace_cat_name": "true",
+            },
+        )
+        response = SearchAndReplaceView.as_view(
+            models_and_fields=self.models_and_fields
+        )(request)
+        self.assertContains(response, 'name="preview_id" value="')
+
     def test_render_search_and_replace_form_preview_contains_the_right_instances(self):
         request = RequestFactory().post(
             "/",
@@ -168,6 +192,30 @@ class SearchAndReplaceViewTest(TestCase):
         self.assertContains(response, "the whef")
         self.assertContains(response, "teh whef")
 
+    def test_preview_does_not_change_values(self):
+        request = RequestFactory().post(
+            "/",
+            {
+                "search": "the",
+                "replace": "teh",
+                "search_and_replace_dog_bark": "true",
+                "search_and_replace_dog_name": "true",
+                "search_and_replace_cat_bio": "true",
+                "search_and_replace_cat_name": "true",
+            },
+        )
+
+        response = SearchAndReplaceView.as_view(
+            models_and_fields=self.models_and_fields
+        )(request)
+
+        self.lucy.refresh_from_db()
+
+        self.assertContains(response, "the deep south")
+        self.assertContains(response, "teh deep south")
+        self.assertIn("the", self.lucy.bio)
+        self.assertNotIn("teh", self.lucy.bio)
+
     def test_render_invalid_form(self):
         request = RequestFactory().post("/", {})
         response = SearchAndReplaceView.as_view(
@@ -175,7 +223,7 @@ class SearchAndReplaceViewTest(TestCase):
         )(request)
         self.assertContains(response, "form")
 
-    def test_replace_text_replaces_text(self):
+    def test_missing_preview_id_replaces_nothing(self):
         request = RequestFactory().post(
             "/",
             {
@@ -191,9 +239,30 @@ class SearchAndReplaceViewTest(TestCase):
         SessionMiddleware().process_request(request)
         MessageMiddleware().process_request(request)
 
-        response = SearchAndReplaceView.as_view(
-            models_and_fields=self.models_and_fields
-        )(request)
+        SearchAndReplaceView.as_view(models_and_fields=self.models_and_fields)(request)
+
+        self.lucy.refresh_from_db()
+
+        self.assertEqual(self.lucy.bio, "Grew up in the deep south.")
+
+    def test_replace_text_replaces_text(self):
+        request = RequestFactory().post(
+            "/",
+            {
+                "search": "the",
+                "replace": "teh",
+                "search_and_replace_dog_bark": "true",
+                "search_and_replace_dog_name": "true",
+                "search_and_replace_cat_bio": "true",
+                "search_and_replace_cat_name": "true",
+                "apply": "true",
+                "preview_id": "an-id-used-to-prevent-double-submit",
+            },
+        )
+        SessionMiddleware().process_request(request)
+        MessageMiddleware().process_request(request)
+
+        SearchAndReplaceView.as_view(models_and_fields=self.models_and_fields)(request)
 
         self.lucy.refresh_from_db()
         self.momo.refresh_from_db()
@@ -229,3 +298,42 @@ class SearchAndReplaceViewTest(TestCase):
             models_and_fields=self.models_and_fields
         )(request)
         self.assertContains(response, "Lucy")
+
+    def test_prevent_double_submit(self):
+        request = RequestFactory().post(
+            "/",
+            {
+                "search": "Lucy",
+                "replace": "Lucy Lucy",
+                "search_and_replace_cat_name": "true",
+                "apply": "true",
+                "preview_id": "another-id-used-in-a-double-submit",
+            },
+        )
+        SessionMiddleware().process_request(request)
+        MessageMiddleware().process_request(request)
+        response = SearchAndReplaceView.as_view(models_and_fields=self.models_and_fields)(request)
+
+        self.assertEqual(response.status_code, 302)
+
+        self.lucy.refresh_from_db()
+        self.assertEqual(self.lucy.name, "Lucy Lucy")
+
+        request = RequestFactory().post(
+            "/",
+            {
+                "search": "Lucy",
+                "replace": "Lucy Lucy",
+                "search_and_replace_cat_name": "true",
+                "apply": "true",
+                "preview_id": "another-id-used-in-a-double-submit",
+            },
+        )
+        SessionMiddleware().process_request(request)
+        MessageMiddleware().process_request(request)
+        response = SearchAndReplaceView.as_view(models_and_fields=self.models_and_fields)(request)
+
+        self.assertEqual(response.status_code, 200)
+
+        self.lucy.refresh_from_db()
+        self.assertEqual(self.lucy.name, "Lucy Lucy")
