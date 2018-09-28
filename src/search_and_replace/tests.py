@@ -272,6 +272,26 @@ class SearchAndReplaceViewTest(TestCase):
         self.assertEqual(self.momo.name, "Momo teh first.")
         self.assertEqual(self.adam.bark, "Whef, teh whef!")
 
+    def test_replace_text_preserves_whitespace(self):
+        request = RequestFactory().post(
+            "/",
+            {
+                "search": " the ",
+                "replace": "X  ",
+                "search_and_replace_cat_bio": "true",
+                "apply": "true",
+                "preview_id": "more-ids-used-to-prevent-double-submit",
+            },
+        )
+        SessionMiddleware().process_request(request)
+        MessageMiddleware().process_request(request)
+
+        SearchAndReplaceView.as_view(models_and_fields=self.models_and_fields)(request)
+
+        self.lucy.refresh_from_db()
+
+        self.assertEqual(self.lucy.bio, "Grew up inX  deep south.")
+
     def test_search_is_case_sensitive(self):
         request = RequestFactory().post(
             "/",
@@ -312,7 +332,9 @@ class SearchAndReplaceViewTest(TestCase):
         )
         SessionMiddleware().process_request(request)
         MessageMiddleware().process_request(request)
-        response = SearchAndReplaceView.as_view(models_and_fields=self.models_and_fields)(request)
+        response = SearchAndReplaceView.as_view(
+            models_and_fields=self.models_and_fields
+        )(request)
 
         self.assertEqual(response.status_code, 302)
 
@@ -331,7 +353,9 @@ class SearchAndReplaceViewTest(TestCase):
         )
         SessionMiddleware().process_request(request)
         MessageMiddleware().process_request(request)
-        response = SearchAndReplaceView.as_view(models_and_fields=self.models_and_fields)(request)
+        response = SearchAndReplaceView.as_view(
+            models_and_fields=self.models_and_fields
+        )(request)
 
         self.assertEqual(response.status_code, 200)
 

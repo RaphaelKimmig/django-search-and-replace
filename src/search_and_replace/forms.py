@@ -3,8 +3,8 @@ from django.db.models.options import Options
 
 
 class SearchAndReplaceForm(forms.Form):
-    search = forms.CharField()
-    replace = forms.CharField(required=False)
+    search = forms.CharField(strip=False)
+    replace = forms.CharField(required=False, strip=False)
 
     def _get_form_field_name(self, model, field):
         opts = model._meta
