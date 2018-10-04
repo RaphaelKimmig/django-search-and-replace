@@ -5,13 +5,15 @@ window.addEventListener('load', function () {
     search.mark(search_and_replace.dataset.search, {
         separateWordSearch: false,
         className: "mark-search",
-        caseSensitive: true
+        caseSensitive: true,
+        diacritics: false
     });
 
     var replace = new Mark(document.querySelectorAll("td.replace"));
     replace.mark(search_and_replace.dataset.replace, {
         separateWordSearch: false,
         className: "mark-replace",
-        caseSensitive: true
+        caseSensitive: true,
+        diacritics: false
     });
 }, false);
