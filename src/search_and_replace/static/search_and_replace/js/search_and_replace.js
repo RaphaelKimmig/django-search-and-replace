@@ -16,4 +16,13 @@ window.addEventListener('load', function () {
         caseSensitive: true,
         diacritics: false
     });
+
+    /* remove apply button on input */
+    function remove_apply_button() {
+        var search_and_replace_apply = document.getElementById("search-and-replace-apply");
+        if(search_and_replace_apply !== null) {
+            search_and_replace_apply.parentNode.removeChild(search_and_replace_apply);
+        }
+    };
+    document.querySelectorAll('form#search-and-replace input').forEach(function (elem) { elem.addEventListener('input', remove_apply_button)});
 }, false);
